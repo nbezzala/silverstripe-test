@@ -32,4 +32,12 @@ class HomePage_Controller extends Page_Controller {
     public function init() {
 		parent::init();
     }
+
+    public function doBrowserPoll($data, $form) {
+        $submission = new BrowserPollSubmission();
+        $form->saveInto($submission);
+        $submission->write();
+        return $this->redirectBack();
+    }
 }
+
