@@ -7,9 +7,11 @@ class HomePage_Controller extends Page_Controller {
     private static $allowed_actions = array('BrowserPollForm');
 
     public function BrowserPollForm() {
+        if (Session::get('BrowserPollVoted')) return false;
+
         $fields = new FieldList(
             new TextField('Name', 'Your Name'),
-            new TextField('Email', 'Your Email'),
+            new EmailField('Email', 'Your Email'),
             new OptionsetField('Browser', 'Your Favourite Browser', array(
                 'Internet Explorer' =>  'Internet Explorer',
                 'Firefox'           =>  'Firefox',
@@ -25,8 +27,10 @@ class HomePage_Controller extends Page_Controller {
         $actions = new FieldList(
             new FormAction('doBrowserPoll', 'Submit')
         );
+
+        $validator = new RequiredFields('Name', 'Email', 'Browser');
         
-        return new Form($this, 'BrowserPollForm', $fields, $actions);
+        return new Form($this, 'BrowserPollForm', $fields, $actions, $validator);
     }
 	
     public function init() {
@@ -37,7 +41,25 @@ class HomePage_Controller extends Page_Controller {
         $submission = new BrowserPollSubmission();
         $form->saveInto($submission);
         $submission->write();
+        Session::set('BrowserPollVoted', true);
         return $this->redirectBack();
+    }
+
+    public function BrowserPollResults() {
+        $submissions = new GroupedList(BrowserPollSubmission::get());
+        $total = $submissions->Count();
+
+        $list = new ArrayList();
+        foreach ($submissions->groupBy('Browser') as $browserName => $browserSubmissions) {
+echo $browserName . "<br>";
+            $percentage = (int) $browserSubmissions->Count() / $total * 100;
+            $list->push(new ArrayData(array(
+                'Browser'       => $browserName,
+                'Count'         => $browserSubmissions->Count(),
+                'Percentage'    => $percentage,
+            )));
+        }
+        return $list;
     }
 }
 
